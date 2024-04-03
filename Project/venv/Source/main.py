@@ -9,6 +9,13 @@ METER_TO_PIXELS = 100
 CANVAS_WIDTH = 1200
 CANVAS_HEIGHT = 800
 ROOM_COLOR = "#d2d2d2"
+SOFA_COLOR = "#f4a460"
+TABLE_COLOR = "#8b4513"
+COFFEE_TABLE_COLOR = "#8b4513"
+CHAIR_COLOR = "#8b4513"
+TV_COLOR = "#8b4513"
+LAMP_COLOR = "#8b4513"
+AREA_COLOR = "#3333aa"
 
 class Vector2D:
     def __init__(self, x: float, y: float):
@@ -75,16 +82,18 @@ class Door(Wall):
 
 class BoundingBox:
     def __init__(self, width: float, height: float, position: Vector2D = Vector2D(0, 0), rotation: float = 0):
-        self.height = height * METER_TO_PIXELS
-        self.width = width * METER_TO_PIXELS
-        self.position = position
-        self.rotation = rotation
+        self.height = height                            # Height in meters
+        self.width = width                              # Width in meters
+        self.position = position                        # Position of the center of the bounding box
+        self.rotation = rotation                        # Rotation in radians
+        self.height_px = height * METER_TO_PIXELS       # Height in pixels
+        self.width_px = width * METER_TO_PIXELS         # Width in pixels
 
         self.update_corners()
 
     def update_corners(self):
-        hw = self.width / 2
-        hh = self.height / 2
+        hw = self.width_px / 2
+        hh = self.height_px / 2
 
         # Points before rotation
         points = [
@@ -106,29 +115,33 @@ class BoundingBox:
 
         self.top_left, self.top_right, self.bottom_right, self.bottom_left = self.corners
 
-    def place(self, new_position: Vector2D):
+    def place(self, new_position: Vector2D, rotation: float = 0):
         self.position = new_position
-        self.top_left = Vector2D(self.position.x - (self.width / 2), self.position.y - (self.height / 2))
-        self.bottom_right = Vector2D(self.position.x + (self.width / 2), self.position.y + (self.height / 2))
+        self.rotation = rotation
+        self.update_corners()
 
-    def draw(self):
-        canvas.create_line(self.top_left.x, self.top_left.y, self.top_right.x, self.top_right.y, fill="red")
-        canvas.create_line(self.top_right.x, self.top_right.y, self.bottom_right.x, self.bottom_right.y, fill="red")
-        canvas.create_line(self.bottom_right.x, self.bottom_right.y, self.bottom_left.x, self.bottom_left.y, fill="red")
-        canvas.create_line(self.bottom_left.x, self.bottom_left.y, self.top_left.x, self.top_left.y, fill="red")
 
-        direction_identifier_position = Utils.midpoint(self.top_left, self.top_right)
-        did_right = Utils.midpoint(self.top_right, self.bottom_right)
-        did_right = Utils.midpoint(did_right, direction_identifier_position)
-        did_left = Utils.midpoint(self.top_left, self.bottom_left)
-        did_left = Utils.midpoint(did_left, direction_identifier_position)
-        canvas.create_line(direction_identifier_position.x, direction_identifier_position.y, did_right.x, did_right.y, fill="black")
-        canvas.create_line(direction_identifier_position.x, direction_identifier_position.y, did_left.x, did_left.y, fill="black")
+    def draw(self, line_color: str = "red", fill_color: str = "white", show_direction: bool = False):
+        #canvas.create_line(self.top_left.x, self.top_left.y, self.top_right.x, self.top_right.y, fill="red")
+        #canvas.create_line(self.top_right.x, self.top_right.y, self.bottom_right.x, self.bottom_right.y, fill="red")
+        #canvas.create_line(self.bottom_right.x, self.bottom_right.y, self.bottom_left.x, self.bottom_left.y, fill="red")
+        #canvas.create_line(self.bottom_left.x, self.bottom_left.y, self.top_left.x, self.top_left.y, fill="red")
+
+        canvas.create_polygon(self.top_left.x, self.top_left.y, self.top_right.x, self.top_right.y, self.bottom_right.x, self.bottom_right.y, self.bottom_left.x, self.bottom_left.y, outline=line_color, fill=fill_color)
+
+        if show_direction:
+            direction_identifier_position = Utils.midpoint(self.top_left, self.top_right)
+            did_right = Utils.midpoint(self.top_right, self.bottom_right)
+            did_right = Utils.midpoint(did_right, direction_identifier_position)
+            did_left = Utils.midpoint(self.top_left, self.bottom_left)
+            did_left = Utils.midpoint(did_left, direction_identifier_position)
+            canvas.create_line(direction_identifier_position.x, direction_identifier_position.y, did_right.x, did_right.y, fill="black")
+            canvas.create_line(direction_identifier_position.x, direction_identifier_position.y, did_left.x, did_left.y, fill="black")
 
         #canvas.create_polygon(self.top_left.x, self.top_left.y, self.bottom_right.x, self.bottom_right.y, outline="red")
 
 
-class Furnitutre:
+class Furniture:
     def __init__(self, bounding_box: BoundingBox):
         self.bounding_box = bounding_box
 
@@ -136,20 +149,20 @@ class Furnitutre:
         self.bounding_box.draw()
 
 # Furniture classes
-class Sofa(Furnitutre):
+class Sofa(Furniture):
     def __init__(self, width: float, height:float, position: Vector2D = Vector2D(0, 0), rotation = 0):
         super().__init__(BoundingBox(width=width, height=height, position=position, rotation=rotation))
 
     def draw(self):
-        self.bounding_box.draw()
+        self.bounding_box.draw(fill_color=SOFA_COLOR, show_direction=True)
         canvas.create_text(self.bounding_box.position.x, self.bounding_box.position.y, text="Sofa", fill="black")
 
-class Table(Furnitutre):
+class Table(Furniture):
     def __init__(self, width: float, height:float, position: Vector2D = Vector2D(0, 0), rotation = 0):
         super().__init__(BoundingBox(width=width, height=height, position=position, rotation=rotation))
 
     def draw(self):
-        self.bounding_box.draw()
+        self.bounding_box.draw(fill_color=TABLE_COLOR)
         canvas.create_text(self.bounding_box.position.x, self.bounding_box.position.y, text="Table", fill="black")
 
 class CoffeeTable(Table):
@@ -157,32 +170,70 @@ class CoffeeTable(Table):
         super().__init__(width=width, height=height, position=position, rotation=rotation)
 
     def draw(self):
-        self.bounding_box.draw()
+        self.bounding_box.draw(fill_color=COFFEE_TABLE_COLOR)
         canvas.create_text(self.bounding_box.position.x, self.bounding_box.position.y, text="Coffee Table", fill="black")
 
-class Chair(Furnitutre):
+class Chair(Furniture):
     def __init__(self, width: float, height:float, position: Vector2D = Vector2D(0, 0), rotation = 0):
         super().__init__(BoundingBox(width=width, height=height, position=position, rotation=rotation))
 
     def draw(self):
-        self.bounding_box.draw()
+        self.bounding_box.draw(fill_color=CHAIR_COLOR, show_direction=True)
         canvas.create_text(self.bounding_box.position.x, self.bounding_box.position.y, text="Chair", fill="black")
 
-class TV(Furnitutre):
+class TV(Furniture):
     def __init__(self, width: float, height:float, position: Vector2D = Vector2D(0, 0), rotation = 0):
         super().__init__(BoundingBox(width=width, height=height, position=position, rotation=rotation))
 
     def draw(self):
-        self.bounding_box.draw()
+        self.bounding_box.draw(fill_color=TV_COLOR, show_direction=True)
         canvas.create_text(self.bounding_box.position.x, self.bounding_box.position.y, text="TV", fill="black")
 
-class Lamp(Furnitutre):
+class Lamp(Furniture):
     def __init__(self, width: float, height:float, position: Vector2D = Vector2D(0, 0), rotation = 0):
         super().__init__(BoundingBox(width=width, height=height, position=position, rotation=rotation))
 
     def draw(self):
-        self.bounding_box.draw()
+        self.bounding_box.draw(fill_color=LAMP_COLOR)
         canvas.create_text(self.bounding_box.position.x, self.bounding_box.position.y, text="Lamp", fill="black")
+
+
+class Area:
+    def __init__(self, priority: int, name: str, children: List[Furniture] = [], fill_color: str = "white"):
+        self.priority = priority
+        self.name = name
+        self.children = children
+        self.fill_color = fill_color
+        self.calculate_bounding_box()
+
+    def add_child(self, furniture: Furniture):
+        self.children.append(furniture)
+    def calculate_bounding_box(self):
+        if len(self.children) == 0:
+            self.bounding_box = BoundingBox(width=0, height=0)
+            return
+
+        max_x, min_x, max_y, min_y = 0, CANVAS_WIDTH, 0, CANVAS_HEIGHT
+        for child in self.children:
+            child_bb = child.bounding_box
+            max_x = max(max_x, child_bb.top_right.x, child_bb.bottom_right.x, child_bb.top_left.x, child_bb.bottom_left.x)
+            min_x = min(min_x, child_bb.top_right.x, child_bb.bottom_right.x, child_bb.top_left.x, child_bb.bottom_left.x)
+            max_y = max(max_y, child_bb.top_right.y, child_bb.bottom_right.y, child_bb.top_left.y, child_bb.bottom_left.y)
+            min_y = min(min_y, child_bb.top_right.y, child_bb.bottom_right.y, child_bb.top_left.y, child_bb.bottom_left.y)
+
+        width_px = max_x - min_x
+        height_px = max_y - min_y
+        width = width_px / METER_TO_PIXELS
+        height = height_px / METER_TO_PIXELS
+        position = Vector2D(min_x + width_px / 2, min_y + height_px / 2)
+
+        self.bounding_box = BoundingBox(width=width, height=height, position=position)
+
+    def draw(self):
+        self.bounding_box.draw(fill_color=self.fill_color)
+        for child in self.children:
+            child.draw()
+
 
 class Room:
     # width and height are in meters
@@ -210,6 +261,7 @@ class Room:
         self.doors: List[Door] = []
         self.windows: List[Window] = []
         self.furnitures = []
+        self.areas = []
 
 
     def draw_room(self):
@@ -223,6 +275,9 @@ class Room:
         for window in self.windows:
             window.draw()
 
+        for area in self.areas:
+            area.draw()
+
         for furniture in self.furnitures:
             furniture.draw()
 
@@ -232,8 +287,11 @@ class Room:
     def add_window(self, window: Window):
         self.windows.append(window)
 
-    def add_furniture(self, furniture: Furnitutre):
+    def add_furniture(self, furniture: Furniture):
         self.furnitures.append(furniture)
+
+    def add_area(self, area: Area):
+        self.areas.append(area)
 
 
 class Utils:
@@ -273,8 +331,11 @@ sofa3 = Sofa(width=1, height=1, position=sofa3_position, rotation=0)
 
 coffee_table_position = room_box.top_left + Vector2D(130, 250)
 coffee_table1 = CoffeeTable(width=1.6, height=0.8, position=coffee_table_position, rotation=math.pi/2)
+tv_position = room_box.top_left + Vector2D(25, 250)
+tv1 = TV(width=2, height=0.5, position=tv_position, rotation=math.pi/2)
 
-table_position = room_box.position + Vector2D(100, 100)
+
+table_position = room_box.position + Vector2D(250, 100)
 table1 = Table(width=2, height=1, position=table_position, rotation=0)
 chair1_position = table_position + Vector2D(50, 100)
 chair1 = Chair(width=0.5, height=0.5, position=chair1_position, rotation=0)
@@ -286,22 +347,16 @@ chair4_position = table_position + Vector2D(-50, 100)
 chair4 = Chair(width=0.5, height=0.5, position=chair4_position, rotation=0)
 
 
-
+# Create areas
+living_area = Area(priority=1, name="Living Area", children=[sofa1, sofa2, sofa3, coffee_table1, tv1], fill_color=AREA_COLOR)
+dining_area = Area(priority=2, name="Dining Area", children=[table1, chair1, chair2, chair3, chair4], fill_color="#aa3333")
 # Add Furnitures to room
 my_room.add_window(window1)
 my_room.add_window(window2)
 my_room.add_window(window3)
 my_room.add_door(door1)
-my_room.add_furniture(sofa1)
-my_room.add_furniture(sofa2)
-my_room.add_furniture(sofa3)
-my_room.add_furniture(coffee_table1)
-
-my_room.add_furniture(table1)
-my_room.add_furniture(chair1)
-my_room.add_furniture(chair2)
-my_room.add_furniture(chair3)
-my_room.add_furniture(chair4)
+my_room.add_area(living_area)
+my_room.add_area(dining_area)
 
 my_room.draw_room()
 
